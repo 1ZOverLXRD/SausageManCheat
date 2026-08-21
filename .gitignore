@@ -1,0 +1,18 @@
+# 构建输出
+build/
+bin/
+out/
+
+# VS 临时文件
+.vs/
+*.suo
+*.user
+*.VC.db
+*.VC.opendb
+
+# ImGui vendor（可重新下载）
+vendor/imgui/
+
+# 日志
+*.log
+SausageMan_Config.ini
