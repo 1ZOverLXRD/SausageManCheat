@@ -214,8 +214,8 @@ static LRESULT CALLBACK hkWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
         if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
             return true;
 
-        // 菜单键（Insert）切换
-        if (msg == WM_KEYDOWN && wParam == VK_INSERT && !io.WantCaptureKeyboard) {
+        // 菜单键（DEL）切换
+        if (msg == WM_KEYDOWN && wParam == VK_DELETE && !io.WantCaptureKeyboard) {
             Config::ToggleMenu();
             return true;
         }
