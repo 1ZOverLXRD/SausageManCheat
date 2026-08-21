@@ -89,6 +89,7 @@ void DrawMenu() {
             ImGui::EndTabItem();
         }
     }
+    ImGui::EndTabBar();  // 必须有，否则 Missing EndTabBar()
 
     ImGui::End();
 }
