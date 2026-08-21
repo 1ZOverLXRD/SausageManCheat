@@ -2,7 +2,7 @@
 
 香肠派对 (Sausage Man) PC 端 IL2CPP 内部作弊 DLL。
 
-**作弊版本: 25.17.4**
+**游戏版本: 25.17.4**
 
 本项目可作为 Unity IL2CPP FPS 作弊开发的参考示例：内部 DLL 里的完整玩家遍历、骨骼读取、ESP 与 Aimbot。
 
