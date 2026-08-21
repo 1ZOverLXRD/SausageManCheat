@@ -24,6 +24,4 @@ SausageMan_Config.ini
 
 # vendor（三方库，不跟踪）
 vendor/imgui/
-!DUMP/
-DUMP/*
-!DUMP/dump.cs
+DUMP/
