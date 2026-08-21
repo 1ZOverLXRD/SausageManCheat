@@ -7,7 +7,31 @@
 - **游戏：** 香肠派对 (Sausage Man)
 - **引擎：** Unity IL2CPP（**无加密/无保护**，可直接 IL2CPPDumper 导出）
 - **平台：** PC 版，从 [TapTap](https://www.taptap.cn) 下载安装
-- **Dump：** `dump.cs`（80MB）在 [Release v1.0.0 附件](https://github.com/1ZOverLXRD/SausageManCheat/releases/tag/v1.0.0) 中
+- **Dump：** `DUMP/dump.cs`（80MB，IL2CPPDumper 导出，包含完整类定义 + 偏移）
+
+## 已实现功能
+
+- **D3D11 Present Hook** — VTable 替换，不依赖 MinHook
+- **ImGui 渲染** — 亮色主题，大字体，中文 Fallback，Unity Raw Input 兼容
+- **玩家遍历** — 通过 `GameWorldClientManager → BattleWorld → StartGame → RoleNetList` 全量枚举
+- **骨骼读取** — `BattleRoleLogic → RLC → BR → RC → AnimatorControl` 链路，8 个骨骼点
+- **ESP**
+  - 2D Box（基于骨骼位置自适应高度）
+  - 3D Box（骨骼尺寸 + 朝向相机）
+  - 骨骼绘制（清晰骨架，无交叉线）
+  - 血量条
+  - 名字 + 距离
+  - 队伍过滤 / 最大距离
+- **Aimbot**（`mouse_event` 模式）
+  - 选敌方式：最近距离 / 最中心 / 最低血量
+  - delta/smooth 算法（距离越远移越快，自然收敛）
+  - FOV 限制 / 死区 / 平滑系数可调
+  - 可瞄准任意骨骼
+- **存活检测** — 基于手掌位置变化，30 帧(0.5s)不动 → Suspect，60 帧(1s) → Inactive
+- **手写 W2S** — 纯数学矩阵运算，零 Unity API
+- **游戏对象模型层**（`GameSDK`）— Transform、RoleNet、RoleLogic、AnimatorControl 类型化封装
+- **配置持久化** — INI 文件保存/加载
+- **场景切换自适应** — 自动检测 CameraController 重建
 
 ## 项目结构
 
