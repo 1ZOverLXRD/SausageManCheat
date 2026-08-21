@@ -227,7 +227,69 @@ static LRESULT CALLBACK hkWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 }
 
 // ---- 每帧渲染（在 hkPresent 中调用） ----
-static void RenderFrame() {
+static ID3D11RenderTargetView* g_pRTV = nullptr;
+static ID3D11Device* g_pd3dDevice = nullptr;
+static ID3D11DeviceContext* g_pd3dCtx = nullptr;
+
+static bool EnsureRenderTarget(IDXGISwapChain* pSwapChain) {
+    // GetDevice 拿设备（首次）
+    if (!g_pd3dDevice) {
+        HRESULT hr = pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&g_pd3dDevice);
+        if (FAILED(hr) || !g_pd3dDevice) return false;
+        g_pd3dDevice->GetImmediateContext(&g_pd3dCtx);
+        if (!g_pd3dCtx) return false;
+    }
+
+    // 如果 RTV 已存在，检查 swapchain 尺寸是否变化（ResizeBuffers 后需重建）
+    if (g_pRTV) {
+        ID3D11Texture2D* pBB = nullptr;
+        if (SUCCEEDED(pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&pBB))) {
+            D3D11_TEXTURE2D_DESC desc;
+            pBB->GetDesc(&desc);
+            pBB->Release();
+            // 简化：不检查尺寸变化，直接用同一个 RTV（backbuffer 是同一个对象）
+        }
+        return true;
+    }
+
+    // 创建 RTV
+    ID3D11Texture2D* pBackBuffer = nullptr;
+    HRESULT hr = pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&pBackBuffer);
+    if (FAILED(hr) || !pBackBuffer) return false;
+
+    hr = g_pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, &g_pRTV);
+    pBackBuffer->Release();
+    if (FAILED(hr)) return false;
+
+    Log::Printf("[D3D11] RTV 创建成功: 0x%p", g_pRTV);
+    return true;
+}
+
+static void RenderFrame(IDXGISwapChain* pSwapChain) {
+    if (!EnsureRenderTarget(pSwapChain)) return;
+
+    // 保存当前 RTV/DSV/Viewport
+    ID3D11RenderTargetView* oldRtv = nullptr;
+    ID3D11DepthStencilView* oldDsv = nullptr;
+    g_pd3dCtx->OMGetRenderTargets(1, &oldRtv, &oldDsv);
+
+    // 设置我们的 RTV，清空深度（不绑 DSV 防止深度测试影响）
+    g_pd3dCtx->OMSetRenderTargets(1, &g_pRTV, nullptr);
+
+    // 设置 viewport（全屏）
+    RECT rect;
+    GetClientRect(g_hwnd, &rect);
+    D3D11_VIEWPORT vp;
+    vp.Width = (FLOAT)(rect.right - rect.left);
+    vp.Height = (FLOAT)(rect.bottom - rect.top);
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
+    vp.TopLeftX = 0;
+    vp.TopLeftY = 0;
+    if (vp.Width < 1) vp.Width = 1920;
+    if (vp.Height < 1) vp.Height = 1080;
+    g_pd3dCtx->RSSetViewports(1, &vp);
+
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
@@ -256,6 +318,11 @@ static void RenderFrame() {
 
     ImGui::Render();
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+    // 恢复原 RTV/DSV
+    g_pd3dCtx->OMSetRenderTargets(1, &oldRtv, oldDsv);
+    if (oldRtv) oldRtv->Release();
+    if (oldDsv) oldDsv->Release();
 }
 
 // ---- hkPresent ----
@@ -284,7 +351,7 @@ static HRESULT STDMETHODCALLTYPE hkPresent(IDXGISwapChain* pSwapChain, UINT Sync
 
     // ImGui 渲染（不包在 GCDisable 里，避免渲染出错影响 GC 状态）
     __try {
-        RenderFrame();
+        RenderFrame(pSwapChain);
     } __except(EXCEPTION_EXECUTE_HANDLER) {
         Log::Printf("[D3D11] 渲染异常 code=0x%X", GetExceptionCode());
     }
