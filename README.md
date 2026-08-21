@@ -1,5 +1,7 @@
 # SausageManCheat
 
+**[📖 中文文档 (Chinese README)](README-zh.md)**
+
 Internal cheat DLL for **Sausage Man** (香肠派对), a Unity IL2CPP PC game.
 
 **Game Version: 25.17.4**
