@@ -6,6 +6,9 @@ namespace CameraManager {
 // 每帧更新：读取 Camera 指针 + 矩阵
 void Update();
 
+// 获取垂直 FOV（度，从投影矩阵反算）
+float GetVerticalFOV();
+
 // 手写 W2S（纯数学，零 Unity API）
 bool WorldToScreen(float wx, float wy, float wz, float& sx, float& sy);
 

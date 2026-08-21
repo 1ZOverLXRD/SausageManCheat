@@ -35,24 +35,32 @@ static ImU32 TeamColor(bool isEnemy) {
     return isEnemy ? Color(255, 60, 60) : Color(60, 255, 60);
 }
 
-// ---- 绘制 2D Box ----
+// ---- 绘制 2D Box（基于骨骼位置） ----
 static void DrawBox2D(const PlayerInfo& p, ImU32 col) {
-    // 用骨骼高度自适应，否则默认
     float boxHeight = 70.0f, boxWidth = 30.0f, centerY = p.screenY;
 
+    // 用骨骼位置计算 Box 位置（更即时）
     if (p.boneValid[BONE_HEAD] && (p.boneValid[BONE_LEFT_FOOT] || p.boneValid[BONE_RIGHT_FOOT])) {
         float footY = p.boneValid[BONE_LEFT_FOOT] ? p.boneScreen[BONE_LEFT_FOOT][1]
                                                    : p.boneScreen[BONE_RIGHT_FOOT][1];
-        boxHeight = std::abs(p.boneScreen[BONE_HEAD][1] - footY) * 1.2f;
+        float headY = p.boneScreen[BONE_HEAD][1];
+        boxHeight = std::abs(headY - footY) * 1.2f;
         boxWidth = boxHeight * 0.35f;
-        centerY = (p.boneScreen[BONE_HEAD][1] + footY) * 0.5f;
+        centerY = (headY + footY) * 0.5f;
     } else if (p.boneValid[BONE_HIP] && p.boneValid[BONE_HEAD]) {
         boxHeight = std::abs(p.boneScreen[BONE_HEAD][1] - p.boneScreen[BONE_HIP][1]) * 1.5f;
         boxWidth = boxHeight * 0.35f;
+        centerY = (p.boneScreen[BONE_HEAD][1] + p.boneScreen[BONE_HIP][1]) * 0.5f;
     }
 
-    ImVec2 min(p.screenX - boxWidth, centerY - boxHeight * 0.5f);
-    ImVec2 max(p.screenX + boxWidth, centerY + boxHeight * 0.5f);
+    // Box 水平居中用 Head 屏幕 X（如果可用），否则用 GO 位置
+    float centerX = p.screenX;
+    if (p.boneValid[BONE_HEAD]) {
+        centerX = p.boneScreen[BONE_HEAD][0];
+    }
+
+    ImVec2 min(centerX - boxWidth, centerY - boxHeight * 0.5f);
+    ImVec2 max(centerX + boxWidth, centerY + boxHeight * 0.5f);
     s_draw->AddRect(min, max, col, 0.0f, 0, 1.5f);
 }
 
@@ -145,36 +153,40 @@ static void DrawBox3D(const PlayerInfo& p, ImU32 col) {
     }
 }
 
-// ---- 绘制骨骼 ----
+// ---- 绘制骨骼（清晰骨架，无交叉线） ----
 static void DrawSkeleton(const PlayerInfo& p, ImU32 col) {
-    auto bone = [&](int b) -> bool {
-        return p.boneValid[b];
-    };
-    auto BP = [&](int b) -> ImVec2 {
-        return ImVec2(p.boneScreen[b][0], p.boneScreen[b][1]);
-    };
+    auto bone = [&](int b) -> bool { return p.boneValid[b]; };
+    auto BP = [&](int b) -> ImVec2 { return ImVec2(p.boneScreen[b][0], p.boneScreen[b][1]); };
 
-    // 连接关系
-    // Head → Spine → Hip → LeftFoot
-    //          Spine → Hip → RightFoot
-    // 头部 → 手
+    // 躯干中线
     if (bone(BONE_HEAD) && bone(BONE_SPINE))
         s_draw->AddLine(BP(BONE_HEAD), BP(BONE_SPINE), col, 1.5f);
-    if (bone(BONE_SPINE) && bone(BONE_HIP))
+    // Spine → SkinBody（如果用 SkinBody 当上半身）
+    if (bone(BONE_SPINE) && bone(BONE_SKIN_BODY))
+        s_draw->AddLine(BP(BONE_SPINE), BP(BONE_SKIN_BODY), col, 1.5f);
+    // SkinBody → Hip
+    if (bone(BONE_SKIN_BODY) && bone(BONE_HIP))
+        s_draw->AddLine(BP(BONE_SKIN_BODY), BP(BONE_HIP), col, 1.5f);
+    // 没有 SkinBody 时 Spine → Hip
+    else if (bone(BONE_SPINE) && bone(BONE_HIP))
         s_draw->AddLine(BP(BONE_SPINE), BP(BONE_HIP), col, 1.5f);
-    if (bone(BONE_HIP) && bone(BONE_LEFT_FOOT))
-        s_draw->AddLine(BP(BONE_HIP), BP(BONE_LEFT_FOOT), col, 1.5f);
-    if (bone(BONE_HIP) && bone(BONE_RIGHT_FOOT))
-        s_draw->AddLine(BP(BONE_HIP), BP(BONE_RIGHT_FOOT), col, 1.5f);
-    if (bone(BONE_HEAD) && bone(BONE_LEFT_HAND))
-        s_draw->AddLine(BP(BONE_HEAD), BP(BONE_LEFT_HAND), col, 1.5f);
-    if (bone(BONE_HEAD) && bone(BONE_RIGHT_HAND))
-        s_draw->AddLine(BP(BONE_HEAD), BP(BONE_RIGHT_HAND), col, 1.5f);
-    // 身体 → 手（通过 Spine 或 SkinBody）
+
+    // 手臂：从 SkinBody 或 Spine 到左右手（不连 Head）
     if (bone(BONE_SKIN_BODY) && bone(BONE_LEFT_HAND))
         s_draw->AddLine(BP(BONE_SKIN_BODY), BP(BONE_LEFT_HAND), col, 1.5f);
     if (bone(BONE_SKIN_BODY) && bone(BONE_RIGHT_HAND))
         s_draw->AddLine(BP(BONE_SKIN_BODY), BP(BONE_RIGHT_HAND), col, 1.5f);
+    // 没有 SkinBody 时从 Spine 连
+    else if (bone(BONE_SPINE) && bone(BONE_LEFT_HAND))
+        s_draw->AddLine(BP(BONE_SPINE), BP(BONE_LEFT_HAND), col, 1.5f);
+    else if (bone(BONE_SPINE) && bone(BONE_RIGHT_HAND))
+        s_draw->AddLine(BP(BONE_SPINE), BP(BONE_RIGHT_HAND), col, 1.5f);
+
+    // 腿：Hip → 脚
+    if (bone(BONE_HIP) && bone(BONE_LEFT_FOOT))
+        s_draw->AddLine(BP(BONE_HIP), BP(BONE_LEFT_FOOT), col, 1.5f);
+    if (bone(BONE_HIP) && bone(BONE_RIGHT_FOOT))
+        s_draw->AddLine(BP(BONE_HIP), BP(BONE_RIGHT_FOOT), col, 1.5f);
 }
 
 // ---- 血量条 ----
@@ -214,7 +226,8 @@ void Draw() {
 
     for (auto& p : players) {
         // 过滤
-        if (!p.valid || !p.alive) continue;
+        if (!p.valid) continue;
+        if (p.state == STATE_INACTIVE) continue;  // 不动超过 1s，跳过
         if (!Config::ESP::IsLocal && p.isLocal) continue;          // 默认不显示本地
         if (Config::ESP::TeamCheck && localTeam != 0 && p.team != 0 && p.team == localTeam && !p.isLocal) continue;  // 同队
         if (!p.onScreen) continue;
@@ -244,8 +257,8 @@ void Draw() {
             s_draw->AddText(ImVec2(p.screenX - textSize.x * 0.5f, p.screenY - 60), col, text.c_str(), text.c_str() + text.size());
         }
 
-        // 血量条（在 Box 左侧）
-        if (Config::ESP::HealthBar) {
+        // 血量条（在 Box 左侧）— 血量数据不准确，跳过
+        if (false && Config::ESP::HealthBar) {
             // Box 高度
             float boxH = 70.0f;
             if (p.boneValid[BONE_HEAD] && (p.boneValid[BONE_LEFT_FOOT] || p.boneValid[BONE_RIGHT_FOOT])) {
@@ -255,6 +268,14 @@ void Draw() {
             }
             DrawHealthBar(p, p.screenX - 16, p.screenY - boxH * 0.5f, boxH);
         }
+    }
+
+    // FOV 圆圈（Aimbot 开启时绘制）
+    if (Config::Aimbot::Enabled) {
+        int sw, sh;
+        CameraManager::GetScreenSize(sw, sh);
+        float cx = sw * 0.5f, cy = sh * 0.5f;
+        s_draw->AddCircle(ImVec2(cx, cy), Config::Aimbot::FovRadius, IM_COL32(255, 255, 255, 80), 64, 1.5f);
     }
 }
 

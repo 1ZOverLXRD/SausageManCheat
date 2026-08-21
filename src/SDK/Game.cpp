@@ -26,18 +26,10 @@ void Init() {
 void Update() {
     if (!s_initialized) return;
 
-    // 数据采集（GCDisable 由调用方控制）
+    // PlayerManager::Update() 已做：每帧全量读取 + ReadPlayerData + ReadSkeleton
     PlayerManager::Update();
 
-    // 每帧更新所有玩家数据
     auto& players = PlayerManager::GetPlayers();
-    static int frameCtr = 0;
-    bool skipSkeleton = (frameCtr % 5 != 0);  // 骨骼每 5 帧刷新一次（优化 RuntimeInvoke 开销）
-    frameCtr++;
-    for (auto& p : players) {
-        PlayerManager::ReadPlayerData(p);
-        if (!skipSkeleton) PlayerManager::ReadSkeleton(p);
-    }
 
     // 更新相机
     CameraManager::Update();
@@ -47,16 +39,13 @@ void Update() {
     CameraManager::GetCamPos(camPos);
     for (auto& p : players) {
         if (!p.valid) continue;
-        // 计算距离
         float dx = p.pos[0] - camPos[0];
         float dy = p.pos[1] - camPos[1];
         float dz = p.pos[2] - camPos[2];
         p.distToCam = sqrtf(dx*dx + dy*dy + dz*dz);
 
-        // W2S 玩家位置
         p.onScreen = CameraManager::WorldToScreen(p.pos[0], p.pos[1], p.pos[2], p.screenX, p.screenY);
 
-        // W2S 骨骼
         for (int b = 0; b < BONE_COUNT; b++) {
             if (p.boneValid[b]) {
                 float sx, sy;

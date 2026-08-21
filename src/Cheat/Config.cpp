@@ -27,13 +27,13 @@ namespace ESP {
 namespace Aimbot {
     bool Enabled = false;
     int  Key = VK_RBUTTON;    // 右键激活
-    float MaxSpeed = 80.0f;
-    float MinSpeed = 3.0f;
-    float RampDist = 80.0f;
+    float Smooth = 8.0f;      // 平滑系数 (越大越慢)
     float DeadZone = 3.0f;
     int  AimBone = 2;          // 默认 Head
     bool TeamCheck = true;
     bool VisibleOnly = true;
+    float FovRadius = 150.0f;  // FOV 圆圈半径 (px)
+    int   TargetMode = 0;      // 0=最近距离, 1=最中心, 2=最低血量
 }
 
 void ToggleMenu() {
@@ -66,10 +66,28 @@ void DrawMenu() {
         // ---- Aimbot Tab ----
         if (ImGui::BeginTabItem("Aimbot")) {
             ImGui::Checkbox("启用 Aimbot", &Aimbot::Enabled);
-            ImGui::SliderInt("激活键", &Aimbot::Key, 0, 255, "VK_%d");
-            ImGui::SliderFloat("最大速度", &Aimbot::MaxSpeed, 1.0f, 300.0f);
-            ImGui::SliderFloat("最小速度", &Aimbot::MinSpeed, 0.5f, 50.0f);
-            ImGui::SliderFloat("减速距离", &Aimbot::RampDist, 10.0f, 500.0f);
+            ImGui::Separator();
+
+            // 热键选择
+            const char* keys[] = {"右键", "左键", "X键", "C键", "V键", "鼠标侧键上", "鼠标侧键下", "Shift", "Ctrl", "Alt"};
+            int keyVals[] = {VK_RBUTTON, VK_LBUTTON, 0x58, 0x43, 0x56, VK_XBUTTON1, VK_XBUTTON2, VK_SHIFT, VK_CONTROL, VK_MENU};
+            int keyIdx = 0;
+            for (int i = 0; i < 10; i++) {
+                if (Aimbot::Key == keyVals[i]) { keyIdx = i; break; }
+            }
+            if (ImGui::Combo("激活键", &keyIdx, keys, 10)) {
+                Aimbot::Key = keyVals[keyIdx];
+            }
+            ImGui::Separator();
+
+            // 选敌方式
+            const char* modes[] = {"最近距离", "最中心", "最低血量"};
+            ImGui::Combo("选敌方式", &Aimbot::TargetMode, modes, 3);
+            ImGui::SliderFloat("FOV 半径", &Aimbot::FovRadius, 20.0f, 500.0f, "%.0f px");
+            ImGui::Separator();
+
+            // 瞄准参数
+            ImGui::SliderFloat("平滑系数", &Aimbot::Smooth, 1.0f, 30.0f, "%.1f");
             ImGui::SliderFloat("死区", &Aimbot::DeadZone, 1.0f, 30.0f);
             const char* bones[] = {"左手", "右手", "头", "髋", "身体", "右脚", "左脚", "脊柱"};
             ImGui::Combo("瞄准骨骼", &Aimbot::AimBone, bones, 8);
@@ -95,9 +113,6 @@ void DrawMenu() {
 }
 
 void Save() {
-    // 简单 ini 写入（后续可扩展）
-    // ⚠ 注意：section 前缀必须保留，ESP 和 Aimbot 的键名相同（Enabled）
-    // 读回时用 [Section] 区分，否则互相覆盖
     FILE* f = fopen("SausageMan_Config.ini", "w");
     if (!f) return;
     fprintf(f, "[ESP]\n");
@@ -114,19 +129,18 @@ void Save() {
     fprintf(f, "\n[Aimbot]\n");
     fprintf(f, "AIM.Enabled=%d\n", Aimbot::Enabled ? 1 : 0);
     fprintf(f, "AIM.Key=%d\n", Aimbot::Key);
-    fprintf(f, "AIM.MaxSpeed=%.1f\n", Aimbot::MaxSpeed);
-    fprintf(f, "AIM.MinSpeed=%.1f\n", Aimbot::MinSpeed);
-    fprintf(f, "AIM.RampDist=%.1f\n", Aimbot::RampDist);
+    fprintf(f, "AIM.Smooth=%.1f\n", Aimbot::Smooth);
     fprintf(f, "AIM.DeadZone=%.1f\n", Aimbot::DeadZone);
     fprintf(f, "AIM.AimBone=%d\n", Aimbot::AimBone);
     fprintf(f, "AIM.TeamCheck=%d\n", Aimbot::TeamCheck ? 1 : 0);
     fprintf(f, "AIM.VisibleOnly=%d\n", Aimbot::VisibleOnly ? 1 : 0);
+    fprintf(f, "AIM.FovRadius=%.0f\n", Aimbot::FovRadius);
+    fprintf(f, "AIM.TargetMode=%d\n", Aimbot::TargetMode);
     fclose(f);
     Log::Printf("[Config] 配置已保存");
 }
 
 void Load() {
-    // 简单 ini 读取（键带 section 前缀，避免 ESP/Aimbot 同名单冲突）
     FILE* f = fopen("SausageMan_Config.ini", "r");
     if (!f) return;
     char line[128];
@@ -145,13 +159,13 @@ void Load() {
         else if (sscanf(line, "ESP.IsLocal=%d", &v) == 1) { ESP::IsLocal = v != 0; }
         else if (sscanf(line, "AIM.Enabled=%d", &v) == 1) { Aimbot::Enabled = v != 0; }
         else if (sscanf(line, "AIM.Key=%d", &v) == 1) { Aimbot::Key = v; }
-        else if (sscanf(line, "AIM.MaxSpeed=%f", &fv) == 1) { Aimbot::MaxSpeed = fv; }
-        else if (sscanf(line, "AIM.MinSpeed=%f", &fv) == 1) { Aimbot::MinSpeed = fv; }
-        else if (sscanf(line, "AIM.RampDist=%f", &fv) == 1) { Aimbot::RampDist = fv; }
+        else if (sscanf(line, "AIM.Smooth=%f", &fv) == 1) { Aimbot::Smooth = fv; }
         else if (sscanf(line, "AIM.DeadZone=%f", &fv) == 1) { Aimbot::DeadZone = fv; }
         else if (sscanf(line, "AIM.AimBone=%d", &v) == 1) { Aimbot::AimBone = v; }
         else if (sscanf(line, "AIM.TeamCheck=%d", &v) == 1) { Aimbot::TeamCheck = v != 0; }
         else if (sscanf(line, "AIM.VisibleOnly=%d", &v) == 1) { Aimbot::VisibleOnly = v != 0; }
+        else if (sscanf(line, "AIM.FovRadius=%f", &fv) == 1) { Aimbot::FovRadius = fv; }
+        else if (sscanf(line, "AIM.TargetMode=%d", &v) == 1) { Aimbot::TargetMode = v; }
     }
     fclose(f);
 }

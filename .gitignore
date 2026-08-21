@@ -1,18 +1,23 @@
-# 构建输出
+# 构建产物
 build/
-bin/
-out/
+*.dll
+*.exe
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.obj
 
-# VS 临时文件
+# IDE
 .vs/
-*.suo
+*.sln
+*.vcxproj*
+*.filters
 *.user
-*.VC.db
-*.VC.opendb
+*.suo
 
-# ImGui vendor（可重新下载）
-vendor/imgui/
-
-# 日志
-*.log
+# 配置
 SausageMan_Config.ini
+
+# vendor（三方库，不跟踪）
+vendor/imgui/

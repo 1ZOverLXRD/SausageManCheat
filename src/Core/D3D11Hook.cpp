@@ -334,19 +334,16 @@ static HRESULT STDMETHODCALLTYPE hkPresent(IDXGISwapChain* pSwapChain, UINT Sync
         imGuiInit = true;
     }
 
-    // 数据采集（GCDisable 保护，防止 GC 堆压缩导致指针失效）
+    // 数据采集（无 GCDisable——用户确认去掉）
     __try {
         if (!Game::IsInitialized())
             Game::Init();
 
-        IL2CPP::GCDisable();
         Game::Update();
         Aimbot::Update();
-        IL2CPP::GCEnable();
     } __except(EXCEPTION_EXECUTE_HANDLER) {
         DWORD code = GetExceptionCode();
         Log::Printf("[D3D11] 数据采集异常 code=0x%X", code);
-        __try { IL2CPP::GCEnable(); } __except(1) {}
     }
 
     // ImGui 渲染（不包在 GCDisable 里，避免渲染出错影响 GC 状态）

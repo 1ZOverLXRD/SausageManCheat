@@ -63,4 +63,15 @@ inline bool ReadBytes(uintptr_t addr, void* out, size_t len) {
     }
 }
 
+// 写内存（带长度）
+inline bool WriteBytes(uintptr_t addr, const void* src, size_t len) {
+    __try {
+        if (!addr || !src || !len) return false;
+        memcpy((void*)addr, src, len);
+        return true;
+    } __except(EXCEPTION_EXECUTE_HANDLER) {
+        return false;
+    }
+}
+
 } // namespace Memory
