@@ -18,21 +18,18 @@ static void* (*s_valueBoxFn)(void*, void*) = nullptr;
 // ---------------- 内部工具 ----------------
 
 // IL2CPP 类 static_fields 偏移探测
-// Il2CppClass_1 = 20 指针 × 8 = 0xA0，static_fields 紧跟其后（il2cpp.h 确认）
-// 但不同版本可能不同，探测 0xA0~0xD0 范围
-__declspec(noinline) static uintptr_t ScanForStaticFields(void* klass) {
+// Il2CppClass_1 = 20 指针 × 8 = 0xA0，static_fields 在 0xB8（il2cpp.h 确认）
+// 直接固定偏移，不探测（避免捡到 nestedTypes/implementedInterfaces 的误判）
+__declspec(noinline) static uintptr_t GetStaticFields(void* klass) {
     uintptr_t base = (uintptr_t)klass;
     if (!base) return 0;
-    for (uintptr_t off = 0xA0; off <= 0xD0; off += 8) {
-        uintptr_t candidate = *(uintptr_t*)(base + off);
-        if (candidate > 0x10000 && candidate < 0x7FFFFFFF0000) {
-            // 用 VirtualQuery 检查可读性（无需 __try）
-            MEMORY_BASIC_INFORMATION mbi;
-            if (VirtualQuery((LPCVOID)candidate, &mbi, sizeof(mbi)) &&
-                mbi.State == MEM_COMMIT &&
-                mbi.Protect != PAGE_NOACCESS) {
-                return candidate;
-            }
+    uintptr_t candidate = *(uintptr_t*)(base + 0xB8);
+    if (candidate > 0x10000 && candidate < 0x7FFFFFFF0000) {
+        MEMORY_BASIC_INFORMATION mbi;
+        if (VirtualQuery((LPCVOID)candidate, &mbi, sizeof(mbi)) &&
+            mbi.State == MEM_COMMIT &&
+            mbi.Protect != PAGE_NOACCESS) {
+            return candidate;
         }
     }
     return 0;
@@ -67,7 +64,7 @@ void Update() {
     if (!s_gwmStatic) {
         void* gwcmClass = IL2CPP::FindClass("Assembly-CSharp.dll", "", "GameWorldClientManager");
         if (!gwcmClass) { return; }
-        s_gwmStatic = ScanForStaticFields(gwcmClass);
+        s_gwmStatic = GetStaticFields(gwcmClass);
         if (!s_gwmStatic) { return; }
         Log::Printf("[Player] GWM static_fields = 0x%llX", (unsigned long long)s_gwmStatic);
     }
@@ -116,7 +113,7 @@ void Update() {
     // 本地玩家
     void* gdClass = IL2CPP::FindClass("Assembly-CSharp.dll", "", "GameData");
     if (gdClass) {
-        uintptr_t gdStatic = ScanForStaticFields(gdClass);
+        uintptr_t gdStatic = GetStaticFields(gdClass);
         if (gdStatic) {
             s_localRoleLogic = Memory::ReadPtr(gdStatic + Offsets::GD_LocalRole);
         }

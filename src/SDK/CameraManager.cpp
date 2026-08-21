@@ -21,14 +21,13 @@ static uintptr_t GetGameDataStatic() {
     if (s_gdStatic) return s_gdStatic;
     void* gdClass = IL2CPP::FindClass("Assembly-CSharp.dll", "", "GameData");
     if (!gdClass) return 0;
-    // 探测 static_fields 偏移：Il2CppClass_1=0xA0, static_fields 紧跟其后
-    for (uintptr_t off = 0xA0; off <= 0xD0; off += 8) {
-        uintptr_t candidate = 0;
-        __try { candidate = *(uintptr_t*)((uintptr_t)gdClass + off); } __except(1) { continue; }
-        if (candidate > 0x10000 && candidate < 0x7FFFFFFF0000) {
-            __try { volatile uint8_t b = *(volatile uint8_t*)candidate; (void)b; s_gdStatic = candidate; break; }
-            __except(1) { continue; }
-        }
+    // 探测 static_fields 偏移：Il2CppClass_1=0xA0, static_fields 在 0xB8
+    // 直接固定偏移，不探测范围（避免捡到 nestedTypes 等误判）
+    uintptr_t candidate = 0;
+    __try { candidate = *(uintptr_t*)((uintptr_t)gdClass + 0xB8); } __except(1) { return 0; }
+    if (candidate > 0x10000 && candidate < 0x7FFFFFFF0000) {
+        __try { volatile uint8_t b = *(volatile uint8_t*)candidate; (void)b; s_gdStatic = candidate; }
+        __except(1) { return 0; }
     }
     if (s_gdStatic) {
         Log::Printf("[Camera] GameData static_fields = 0x%llX", (unsigned long long)s_gdStatic);
