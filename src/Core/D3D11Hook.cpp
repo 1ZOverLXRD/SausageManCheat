@@ -7,8 +7,15 @@
 #include "Cheat/Aimbot.h"
 
 #include <imgui.h>
-#include <backends/imgui_impl_dx11.h>
-#include <backends/imgui_impl_win32.h>
+// 确保 IMGUI_IMPL_API 可用（DLL 内部编译时定义为空）
+#ifndef IMGUI_IMPL_API
+#define IMGUI_IMPL_API
+#endif
+#include <imgui_impl_dx11.h>
+#include <imgui_impl_win32.h>
+// imgui_impl_win32.h 的 WndProcHandler 声明在 #if 0 里（防止拖入 windows.h 依赖）
+// 官方要求使用者自己声明。我们已 include windows.h（D3D11Hook.h 间接），手动声明：
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -201,16 +208,17 @@ bool IsInitialized() { return g_initialized; }
 
 // ---- WndProc ----
 static LRESULT CALLBACK hkWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    // 键盘消息（Unity 不接收鼠标）
-    if (msg == WM_KEYDOWN || msg == WM_KEYUP) {
-        if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureKeyboard)
+    // ImGui 输入处理（键盘 + 鼠标）
+    if (ImGui::GetCurrentContext()) {
+        ImGuiIO& io = ImGui::GetIO();
+        if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
             return true;
-    }
 
-    // 菜单键（Insert）切换
-    if (msg == WM_KEYDOWN && wParam == VK_INSERT) {
-        Config::ToggleMenu();
-        return true;
+        // 菜单键（Insert）切换
+        if (msg == WM_KEYDOWN && wParam == VK_INSERT && !io.WantCaptureKeyboard) {
+            Config::ToggleMenu();
+            return true;
+        }
     }
 
     if (g_origWndProc)
@@ -223,6 +231,19 @@ static void RenderFrame() {
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
+
+    // Unity Raw Input 陷阱：WM_MOUSEMOVE 不达 WndProc，需每帧手动设置鼠标
+    ImGuiIO& io = ImGui::GetIO();
+    if (Config::MenuOpen) {
+        POINT pt;
+        GetCursorPos(&pt);
+        ScreenToClient(g_hwnd, &pt);
+        io.MousePos = ImVec2((float)pt.x, (float)pt.y);
+        io.MouseDown[0] = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
+        io.MouseDown[1] = (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0;
+        io.MouseDown[2] = (GetAsyncKeyState(VK_MBUTTON) & 0x8000) != 0;
+        io.MouseWheel = 0;  // 滚轮由 wndProc 处理
+    }
 
     if (Config::MenuOpen) {
         Config::DrawMenu();
@@ -242,35 +263,30 @@ static HRESULT STDMETHODCALLTYPE hkPresent(IDXGISwapChain* pSwapChain, UINT Sync
     static bool imGuiInit = false;
     if (!imGuiInit) {
         InitImGui(pSwapChain);
-        // 首次初始化日志
         Log::Printf("[D3D11] 首次 Present 触发，ImGui 初始化");
         imGuiInit = true;
     }
 
-    // 数据采集 + 渲染（单线程）
+    // 数据采集（GCDisable 保护，防止 GC 堆压缩导致指针失效）
     __try {
-        // GCDisable 防止 GC 堆压缩
-        IL2CPP::GCDisable();
-
-        // 游戏数据更新
-        if (!Game::IsInitialized())  // 这里需要加一个判断初始化标志
+        if (!Game::IsInitialized())
             Game::Init();
+
+        IL2CPP::GCDisable();
         Game::Update();
-
-        // Aimbot
         Aimbot::Update();
-
-        // 渲染
-        RenderFrame();
-
         IL2CPP::GCEnable();
-
     } __except(EXCEPTION_EXECUTE_HANDLER) {
-        // 捕获异常，跳过渲染
         DWORD code = GetExceptionCode();
-        Log::Printf("[D3D11] Present 异常 code=0x%X", code);
-        // 确保 GC 恢复
+        Log::Printf("[D3D11] 数据采集异常 code=0x%X", code);
         __try { IL2CPP::GCEnable(); } __except(1) {}
+    }
+
+    // ImGui 渲染（不包在 GCDisable 里，避免渲染出错影响 GC 状态）
+    __try {
+        RenderFrame();
+    } __except(EXCEPTION_EXECUTE_HANDLER) {
+        Log::Printf("[D3D11] 渲染异常 code=0x%X", GetExceptionCode());
     }
 
     // 调用原始 Present

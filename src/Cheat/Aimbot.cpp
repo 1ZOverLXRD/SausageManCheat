@@ -28,6 +28,7 @@ int FindTarget() {
     }
 
     g_boneTarget = Config::Aimbot::AimBone;
+    if (g_boneTarget < 0 || g_boneTarget >= BONE_COUNT) g_boneTarget = BONE_HEAD;  // 越界保护
 
     int bestIdx = -1;
     float bestDist = 999999.0f;
@@ -121,10 +122,15 @@ void Update() {
 
     g_targetIndex = target;
 
-    // 目标切换日志
+    // 目标切换日志（限流：只在切换且间隔 > 1 秒时打）
     if (g_targetIndex != g_prevTarget) {
-        auto& p = Game::GetPlayers()[g_targetIndex];
-        Log::Printf("[Aimbot] 锁定目标 %s", p.name);
+        auto now = GetTickCount64();
+        static ULONGLONG s_lastLog = 0;
+        if (now - s_lastLog > 1000) {
+            auto& p = Game::GetPlayers()[g_targetIndex];
+            Log::Printf("[Aimbot] 锁定目标 %s", p.name);
+            s_lastLog = now;
+        }
         g_prevTarget = g_targetIndex;
     }
 

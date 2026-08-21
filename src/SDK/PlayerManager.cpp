@@ -7,6 +7,7 @@
 namespace PlayerManager {
 
 static std::vector<PlayerInfo> s_players;
+static int s_scanCounter = 0;  // 全量扫描计数（每 30 帧重建一次）
 static uintptr_t s_localRoleLogic = 0;
 static uintptr_t s_gwmStatic = 0;    // GameWorldClientManager 静态字段基址
 static void* s_getPositionMethod = nullptr;
@@ -17,11 +18,12 @@ static void* (*s_valueBoxFn)(void*, void*) = nullptr;
 // ---------------- 内部工具 ----------------
 
 // IL2CPP 类 static_fields 偏移探测
-// 用 VirtualQuery 检查内存可读性，避免 __try 与 C++ EH 冲突
+// Il2CppClass_1 = 20 指针 × 8 = 0xA0，static_fields 紧跟其后（il2cpp.h 确认）
+// 但不同版本可能不同，探测 0xA0~0xD0 范围
 __declspec(noinline) static uintptr_t ScanForStaticFields(void* klass) {
     uintptr_t base = (uintptr_t)klass;
     if (!base) return 0;
-    for (uintptr_t off = 0xB8; off <= 0xD0; off += 8) {
+    for (uintptr_t off = 0xA0; off <= 0xD0; off += 8) {
         uintptr_t candidate = *(uintptr_t*)(base + off);
         if (candidate > 0x10000 && candidate < 0x7FFFFFFF0000) {
             // 用 VirtualQuery 检查可读性（无需 __try）
@@ -77,39 +79,39 @@ void Update() {
     }
 
     // === 第二步：vector 操作（在 __try 外） ===
-    if ((int)s_players.size() != count) {
-        Log::Printf("[Player] RoleNetList 数量变化: %zu → %d", s_players.size(), count);
-    }
+    if ((int)s_players.size() != count || s_scanCounter % 30 == 0) {
+        // 全量重建（保留 animCtrl 缓存）
+        Log::Printf("[Player] 全量扫描: %d 玩家", count);
+        std::vector<PlayerInfo> oldList = s_players;
+        std::vector<uintptr_t> oldRoleNets;
+        for (auto& o : oldList) oldRoleNets.push_back(o.roleNet);
 
-    // 保留旧缓存
-    std::vector<PlayerInfo> oldList = s_players;
-    std::vector<uintptr_t> oldRoleNets;
-    for (auto& o : oldList) oldRoleNets.push_back(o.roleNet);
+        s_players.clear();
+        s_players.reserve(count);
 
-    s_players.clear();
-    s_players.reserve(count);
+        for (int i = 0; i < count; i++) {
+            uintptr_t roleNet = Memory::ReadPtr(items + Offsets::Array_ItemsStart + (uintptr_t)i * 8);
+            if (!roleNet) continue;
 
-    for (int i = 0; i < count; i++) {
-        uintptr_t roleNet = Memory::ReadPtr(items + Offsets::Array_ItemsStart + (uintptr_t)i * 8);
-        if (!roleNet) continue;
+            PlayerInfo p;
+            p.roleNet = roleNet;
+            p.trans = Memory::ReadPtr(roleNet + Offsets::RN_Transform);
+            p.roleLogic = Memory::ReadPtr(roleNet + Offsets::RN_MyRoleLogic);
+            p.roleNetClient = Memory::ReadPtr(roleNet + Offsets::RN_RoleNetClient);
+            p.isLocal = p.roleNetClient && Memory::ReadBool(p.roleNetClient + Offsets::RNC_isLocalPlayer);
 
-        PlayerInfo p;
-        p.roleNet = roleNet;
-        p.trans = Memory::ReadPtr(roleNet + Offsets::RN_Transform);
-        p.roleLogic = Memory::ReadPtr(roleNet + Offsets::RN_MyRoleLogic);
-        p.roleNetClient = Memory::ReadPtr(roleNet + Offsets::RN_RoleNetClient);
-        p.isLocal = p.roleNetClient && Memory::ReadBool(p.roleNetClient + Offsets::RNC_isLocalPlayer);
-
-        // 恢复缓存
-        for (size_t j = 0; j < oldRoleNets.size(); j++) {
-            if (oldRoleNets[j] == roleNet) {
-                p.animCtrl = oldList[j].animCtrl;
-                p.playerId = oldList[j].playerId;
-                break;
+            // 恢复缓存
+            for (size_t j = 0; j < oldRoleNets.size(); j++) {
+                if (oldRoleNets[j] == roleNet) {
+                    p.animCtrl = oldList[j].animCtrl;
+                    p.playerId = oldList[j].playerId;
+                    break;
+                }
             }
+            s_players.push_back(p);
         }
-        s_players.push_back(p);
     }
+    s_scanCounter++;
 
     // 本地玩家
     void* gdClass = IL2CPP::FindClass("Assembly-CSharp.dll", "", "GameData");

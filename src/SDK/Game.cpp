@@ -31,9 +31,12 @@ void Update() {
 
     // 每帧更新所有玩家数据
     auto& players = PlayerManager::GetPlayers();
+    static int frameCtr = 0;
+    bool skipSkeleton = (frameCtr % 5 != 0);  // 骨骼每 5 帧刷新一次（优化 RuntimeInvoke 开销）
+    frameCtr++;
     for (auto& p : players) {
         PlayerManager::ReadPlayerData(p);
-        PlayerManager::ReadSkeleton(p);
+        if (!skipSkeleton) PlayerManager::ReadSkeleton(p);
     }
 
     // 更新相机

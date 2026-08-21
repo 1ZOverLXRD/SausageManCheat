@@ -95,53 +95,62 @@ void DrawMenu() {
 
 void Save() {
     // 简单 ini 写入（后续可扩展）
+    // ⚠ 注意：section 前缀必须保留，ESP 和 Aimbot 的键名相同（Enabled）
+    // 读回时用 [Section] 区分，否则互相覆盖
     FILE* f = fopen("SausageMan_Config.ini", "w");
     if (!f) return;
     fprintf(f, "[ESP]\n");
-    fprintf(f, "Enabled=%d\n", ESP::Enabled ? 1 : 0);
-    fprintf(f, "Box2D=%d\n", ESP::Box2D ? 1 : 0);
-    fprintf(f, "Box3D=%d\n", ESP::Box3D ? 1 : 0);
-    fprintf(f, "Skeleton=%d\n", ESP::Skeleton ? 1 : 0);
-    fprintf(f, "HealthBar=%d\n", ESP::HealthBar ? 1 : 0);
-    fprintf(f, "Name=%d\n", ESP::Name ? 1 : 0);
-    fprintf(f, "Distance=%d\n", ESP::Distance ? 1 : 0);
-    fprintf(f, "MaxDist=%.0f\n", ESP::MaxDist);
-    fprintf(f, "TeamCheck=%d\n", ESP::TeamCheck ? 1 : 0);
+    fprintf(f, "ESP.Enabled=%d\n", ESP::Enabled ? 1 : 0);
+    fprintf(f, "ESP.Box2D=%d\n", ESP::Box2D ? 1 : 0);
+    fprintf(f, "ESP.Box3D=%d\n", ESP::Box3D ? 1 : 0);
+    fprintf(f, "ESP.Skeleton=%d\n", ESP::Skeleton ? 1 : 0);
+    fprintf(f, "ESP.HealthBar=%d\n", ESP::HealthBar ? 1 : 0);
+    fprintf(f, "ESP.Name=%d\n", ESP::Name ? 1 : 0);
+    fprintf(f, "ESP.Distance=%d\n", ESP::Distance ? 1 : 0);
+    fprintf(f, "ESP.MaxDist=%.0f\n", ESP::MaxDist);
+    fprintf(f, "ESP.TeamCheck=%d\n", ESP::TeamCheck ? 1 : 0);
+    fprintf(f, "ESP.IsLocal=%d\n", ESP::IsLocal ? 1 : 0);
     fprintf(f, "\n[Aimbot]\n");
-    fprintf(f, "Enabled=%d\n", Aimbot::Enabled ? 1 : 0);
-    fprintf(f, "Key=%d\n", Aimbot::Key);
-    fprintf(f, "MaxSpeed=%.1f\n", Aimbot::MaxSpeed);
-    fprintf(f, "MinSpeed=%.1f\n", Aimbot::MinSpeed);
-    fprintf(f, "RampDist=%.1f\n", Aimbot::RampDist);
-    fprintf(f, "DeadZone=%.1f\n", Aimbot::DeadZone);
-    fprintf(f, "AimBone=%d\n", Aimbot::AimBone);
-    fprintf(f, "TeamCheck=%d\n", Aimbot::TeamCheck ? 1 : 0);
+    fprintf(f, "AIM.Enabled=%d\n", Aimbot::Enabled ? 1 : 0);
+    fprintf(f, "AIM.Key=%d\n", Aimbot::Key);
+    fprintf(f, "AIM.MaxSpeed=%.1f\n", Aimbot::MaxSpeed);
+    fprintf(f, "AIM.MinSpeed=%.1f\n", Aimbot::MinSpeed);
+    fprintf(f, "AIM.RampDist=%.1f\n", Aimbot::RampDist);
+    fprintf(f, "AIM.DeadZone=%.1f\n", Aimbot::DeadZone);
+    fprintf(f, "AIM.AimBone=%d\n", Aimbot::AimBone);
+    fprintf(f, "AIM.TeamCheck=%d\n", Aimbot::TeamCheck ? 1 : 0);
+    fprintf(f, "AIM.VisibleOnly=%d\n", Aimbot::VisibleOnly ? 1 : 0);
     fclose(f);
     Log::Printf("[Config] 配置已保存");
 }
 
 void Load() {
-    // 简单 ini 读取
+    // 简单 ini 读取（键带 section 前缀，避免 ESP/Aimbot 同名单冲突）
     FILE* f = fopen("SausageMan_Config.ini", "r");
     if (!f) return;
     char line[128];
     while (fgets(line, sizeof(line), f)) {
         int v;
         float fv;
-        if (sscanf(line, "Enabled=%d", &v) == 1) { ESP::Enabled = v != 0; }
-        else if (sscanf(line, "Box2D=%d", &v) == 1) { ESP::Box2D = v != 0; }
-        else if (sscanf(line, "Box3D=%d", &v) == 1) { ESP::Box3D = v != 0; }
-        else if (sscanf(line, "Skeleton=%d", &v) == 1) { ESP::Skeleton = v != 0; }
-        else if (sscanf(line, "HealthBar=%d", &v) == 1) { ESP::HealthBar = v != 0; }
-        else if (sscanf(line, "Name=%d", &v) == 1) { ESP::Name = v != 0; }
-        else if (sscanf(line, "Distance=%d", &v) == 1) { ESP::Distance = v != 0; }
-        else if (sscanf(line, "MaxDist=%f", &fv) == 1) { ESP::MaxDist = fv; }
-        else if (sscanf(line, "TeamCheck=%d", &v) == 1) { ESP::TeamCheck = v != 0; }
-        else if (sscanf(line, "MaxSpeed=%f", &fv) == 1) { Aimbot::MaxSpeed = fv; }
-        else if (sscanf(line, "MinSpeed=%f", &fv) == 1) { Aimbot::MinSpeed = fv; }
-        else if (sscanf(line, "RampDist=%f", &fv) == 1) { Aimbot::RampDist = fv; }
-        else if (sscanf(line, "DeadZone=%f", &fv) == 1) { Aimbot::DeadZone = fv; }
-        else if (sscanf(line, "AimBone=%d", &v) == 1) { Aimbot::AimBone = v; }
+        if (sscanf(line, "ESP.Enabled=%d", &v) == 1) { ESP::Enabled = v != 0; }
+        else if (sscanf(line, "ESP.Box2D=%d", &v) == 1) { ESP::Box2D = v != 0; }
+        else if (sscanf(line, "ESP.Box3D=%d", &v) == 1) { ESP::Box3D = v != 0; }
+        else if (sscanf(line, "ESP.Skeleton=%d", &v) == 1) { ESP::Skeleton = v != 0; }
+        else if (sscanf(line, "ESP.HealthBar=%d", &v) == 1) { ESP::HealthBar = v != 0; }
+        else if (sscanf(line, "ESP.Name=%d", &v) == 1) { ESP::Name = v != 0; }
+        else if (sscanf(line, "ESP.Distance=%d", &v) == 1) { ESP::Distance = v != 0; }
+        else if (sscanf(line, "ESP.MaxDist=%f", &fv) == 1) { ESP::MaxDist = fv; }
+        else if (sscanf(line, "ESP.TeamCheck=%d", &v) == 1) { ESP::TeamCheck = v != 0; }
+        else if (sscanf(line, "ESP.IsLocal=%d", &v) == 1) { ESP::IsLocal = v != 0; }
+        else if (sscanf(line, "AIM.Enabled=%d", &v) == 1) { Aimbot::Enabled = v != 0; }
+        else if (sscanf(line, "AIM.Key=%d", &v) == 1) { Aimbot::Key = v; }
+        else if (sscanf(line, "AIM.MaxSpeed=%f", &fv) == 1) { Aimbot::MaxSpeed = fv; }
+        else if (sscanf(line, "AIM.MinSpeed=%f", &fv) == 1) { Aimbot::MinSpeed = fv; }
+        else if (sscanf(line, "AIM.RampDist=%f", &fv) == 1) { Aimbot::RampDist = fv; }
+        else if (sscanf(line, "AIM.DeadZone=%f", &fv) == 1) { Aimbot::DeadZone = fv; }
+        else if (sscanf(line, "AIM.AimBone=%d", &v) == 1) { Aimbot::AimBone = v; }
+        else if (sscanf(line, "AIM.TeamCheck=%d", &v) == 1) { Aimbot::TeamCheck = v != 0; }
+        else if (sscanf(line, "AIM.VisibleOnly=%d", &v) == 1) { Aimbot::VisibleOnly = v != 0; }
     }
     fclose(f);
 }

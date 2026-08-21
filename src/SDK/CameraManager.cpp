@@ -21,9 +21,10 @@ static uintptr_t GetGameDataStatic() {
     if (s_gdStatic) return s_gdStatic;
     void* gdClass = IL2CPP::FindClass("Assembly-CSharp.dll", "", "GameData");
     if (!gdClass) return 0;
-    // 探测 static_fields 偏移
-    for (uintptr_t off = 0xB8; off <= 0xD0; off += 8) {
-        uintptr_t candidate = Memory::Read<uintptr_t>((uintptr_t)gdClass + off);
+    // 探测 static_fields 偏移：Il2CppClass_1=0xA0, static_fields 紧跟其后
+    for (uintptr_t off = 0xA0; off <= 0xD0; off += 8) {
+        uintptr_t candidate = 0;
+        __try { candidate = *(uintptr_t*)((uintptr_t)gdClass + off); } __except(1) { continue; }
         if (candidate > 0x10000 && candidate < 0x7FFFFFFF0000) {
             __try { volatile uint8_t b = *(volatile uint8_t*)candidate; (void)b; s_gdStatic = candidate; break; }
             __except(1) { continue; }
@@ -80,43 +81,34 @@ void Update() {
             return;
         }
 
-        // 从 view 矩阵提取相机位置（逆矩阵第4列）
-        // 对仿射矩阵 R|t，view = [R^T | -R^T*t], 相机位置 = -R*t（从逆矩阵计算）
-        // 更简单的方法：view 矩阵的逆阵第4列 = 相机位置
-        // 但直接读 view 矩阵的 12,13,14 不是相机位置（它们是 -R^T*t 的前3个分量）
-        // 正确公式：cameraPos = -R * t = -(R^T)^T * t
-        // 因为 view = [R^T | -R^T*t], 所以 R = [m[0],m[4],m[8]; m[1],m[5],m[9]; m[2],m[6],m[10]]
-        // t = [m[12], m[13], m[14]]
-        // cameraPos = (-R * t) = -(m[0]*t.x + m[1]*t.y + m[2]*t.z, ...) 
-        // 哦不对，view = [R^T|T], 世界坐标 = R^T * (local - T) 所以 R^T = view 的上3x3
-        // 相机位置在 view 空间中 = (0,0,0)，解 R^T*(world - T) = 0 → world = T
-        // 所以 T = [m[12], m[13], m[14]] 就是相机位置 ❌
-        // 等等，不对。Unity 的 view 矩阵 = R^T | -R^T*pos
-        // 所以 m[12] = -(R^T*pos).x, 相机位置需要解
-        // 相机世界位置 = -R * m[12..14]
-        // 简化：m[12] = -(R^T*pos).x = -(R.col0·pos)
-        // 所以 pos.x = -R^T.col0·[m12,m13,m14] = -(m[0]*m[12] + m[1]*m[13] + m[2]*m[14])
-        // 但更简单的方法：直接用 get_position 读 Camera 位置或从 CameraController 拿
-        // 直接从 CameraController 的 LookTarget 位置拿近似
-
-        // 简化：用 view 矩阵的逆计算相机位置
-        // 对 camToWorld = view^-1，第4列 = 相机位置
-        // 但 view 矩阵是正交的（R^T），所以 R = [m0,m4,m8; m1,m5,m9; m2,m6,m10]^T
-        // 逆矩阵上3x3 = R（因为 R^T 的逆 = R）
-        // 逆矩阵第4列 = -R * [m12,m13,m14]
+        // 从 view 矩阵提取相机位置
+        // view = [R^T | -R^T * pos]，列主序存储：
+        //   m[0..2]   = R^T 第0列 = R 第0行 (即 R 的 row0)
+        //   m[4..6]   = R^T 第1列 = R 第1行
+        //   m[8..10]  = R^T 第2列 = R 第2行
+        //   m[12..14] = -R^T * pos
+        // 相机位置 = -(R^T)^-1 * [m12,m13,m14] = -R * [m12,m13,m14]  （R^T 正交）
+        // 所以：
+        //   cam.x = -(R.row0)·t = -(m[0]*t.x + m[1]*t.y + m[2]*t.z)
+        //   cam.y = -(R.row1)·t = -(m[4]*t.x + m[5]*t.y + m[6]*t.z)
+        //   cam.z = -(R.row2)·t = -(m[8]*t.x + m[9]*t.y + m[10]*t.z)
         float* m = s_viewMatrix;
         float tx = m[12], ty = m[13], tz = m[14];
-        // R = [m0,m4,m8; m1,m5,m9; m2,m6,m10]
-        s_camPos[0] = -(m[0]*tx + m[1]*ty + m[2]*tz);   // -R.col0·t
-        s_camPos[1] = -(m[4]*tx + m[5]*ty + m[6]*tz);   // -R.col1·t
-        s_camPos[2] = -(m[8]*tx + m[9]*ty + m[10]*tz);  // -R.col2·t
+        s_camPos[0] = -(m[0]*tx + m[1]*ty + m[2]*tz);   // R 第0行 · t
+        s_camPos[1] = -(m[4]*tx + m[5]*ty + m[6]*tz);   // R 第1行 · t
+        s_camPos[2] = -(m[8]*tx + m[9]*ty + m[10]*tz);  // R 第2行 · t
 
-        // 屏幕尺寸
-        HWND hwnd = GetForegroundWindow();
-        RECT rect;
-        if (hwnd && GetClientRect(hwnd, &rect)) {
-            s_screenW = rect.right - rect.left;
-            s_screenH = rect.bottom - rect.top;
+        // 屏幕尺寸：用 GetForegroundWindow 验证其类名含 Unity（避免切窗口时误判）
+        {
+            HWND hwnd = GetForegroundWindow();
+            char cls[64] = {};
+            if (hwnd && GetClassNameA(hwnd, cls, sizeof(cls)) > 0 && strstr(cls, "Unity")) {
+                RECT rect;
+                if (GetClientRect(hwnd, &rect)) {
+                    s_screenW = rect.right - rect.left;
+                    s_screenH = rect.bottom - rect.top;
+                }
+            }
             if (s_screenW <= 0) s_screenW = 1920;
             if (s_screenH <= 0) s_screenH = 1080;
         }
