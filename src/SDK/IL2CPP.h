@@ -8,7 +8,7 @@ namespace IL2CPP {
 typedef void* (*DomainGetFn)();
 typedef void* (*ThreadAttachFn)(void* domain);
 typedef void* (*ClassFromNameFn)(void* image, const char* ns, const char* name);
-typedef void* (*ImageFromNameFn)(const char* name);
+typedef void* (*DomainAssemblyOpenFn)(void* domain, const char* name);
 typedef void* (*ClassGetMethodFromNameFn)(void* klass, const char* name, int paramCount);
 typedef void* (*RuntimeInvokeFn)(void* method, void* obj, void** params, void** exc);
 typedef void* (*StringNewFn)(const char* str);

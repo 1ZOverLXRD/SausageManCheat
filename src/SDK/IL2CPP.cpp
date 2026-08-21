@@ -9,7 +9,7 @@ static HMODULE g_unityPlayer = nullptr;
 static DomainGetFn            fn_domain_get = nullptr;
 static ThreadAttachFn        fn_thread_attach = nullptr;
 static ClassFromNameFn       fn_class_from_name = nullptr;
-static ImageFromNameFn       fn_image_from_name = nullptr;
+static DomainAssemblyOpenFn  fn_domain_assembly_open = nullptr;
 static ClassGetMethodFromNameFn fn_class_get_method = nullptr;
 static RuntimeInvokeFn       fn_runtime_invoke = nullptr;
 static StringNewFn           fn_string_new = nullptr;
@@ -42,9 +42,7 @@ bool Init() {
     LOAD_EXPORT(g_gameAssembly, "il2cpp_domain_get", fn_domain_get);
     LOAD_EXPORT(g_gameAssembly, "il2cpp_thread_attach", fn_thread_attach);
     LOAD_EXPORT(g_gameAssembly, "il2cpp_class_from_name", fn_class_from_name);
-
-    // 可选（有的版本导出名不同）
-    fn_image_from_name = (ImageFromNameFn)GetProcAddress(g_gameAssembly, "il2cpp_image_from_name");
+    fn_domain_assembly_open = (DomainAssemblyOpenFn)GetProcAddress(g_gameAssembly, "il2cpp_domain_assembly_open");
     fn_class_get_method = (ClassGetMethodFromNameFn)GetProcAddress(g_gameAssembly, "il2cpp_class_get_method_from_name");
     fn_runtime_invoke = (RuntimeInvokeFn)GetProcAddress(g_gameAssembly, "il2cpp_runtime_invoke");
     fn_string_new = (StringNewFn)GetProcAddress(g_gameAssembly, "il2cpp_string_new");
@@ -85,10 +83,24 @@ void GCDisable() { if (fn_gc_disable) fn_gc_disable(); }
 void GCEnable()  { if (fn_gc_enable) fn_gc_enable(); }
 
 void* FindClass(const char* image, const char* ns, const char* name) {
-    if (!fn_image_from_name || !fn_class_from_name) return nullptr;
-    void* img = fn_image_from_name(image);
-    if (!img) return nullptr;
-    return fn_class_from_name(img, ns, name);
+    if (!fn_class_from_name) return nullptr;
+    void* imagePtr = nullptr;
+    if (fn_domain_assembly_open) {
+        // 用 il2cpp_domain_assembly_open 打开 image 获取 Il2CppImage*
+        void* domain = fn_domain_get();
+        if (domain) {
+            void* assembly = fn_domain_assembly_open(domain, image);
+            if (assembly) {
+                // assembly + -0x10 是 image（IL2CPP 内部偏移），或调用 il2cpp_assembly_get_image
+                // 用导出函数获取 image
+                static void* (*getImage)(void*) = nullptr;
+                if (!getImage) getImage = (void* (*)(void*))GetProcAddress(g_gameAssembly, "il2cpp_assembly_get_image");
+                if (getImage) imagePtr = getImage(assembly);
+            }
+        }
+    }
+    if (!imagePtr) return nullptr;
+    return fn_class_from_name(imagePtr, ns, name);
 }
 
 void* GetMethodFromName(void* klass, const char* name, int paramCount) {
