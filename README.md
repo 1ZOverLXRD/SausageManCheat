@@ -5,16 +5,16 @@ Internal cheat DLL for **Sausage Man** (香肠派对), a Unity IL2CPP PC game.
 ## Game Info
 
 - **Game:** Sausage Man (香肠派对)
-- **Engine:** Unity IL2CPP (**no encryption / no protection**, directly dumpable with IL2CPPDumper)
+- **Engine:** Unity IL2CPP (no encryption, directly dumpable with IL2CPPDumper)
 - **Platform:** PC, installable via [TapTap](https://www.taptap.cn)
 - **Dump:** `SausageMan_dump.cs` (80MB) attached to [Release v1.0.0](https://github.com/1ZOverLXRD/SausageManCheat/releases/tag/v1.0.0)
 
 ## Features
 
-- **D3D11 Present Hook** — VTable swap, no MinHook dependency
+- **D3D11 Present Hook** — VTable swap, no MinHook
 - **ImGui Rendering** — light theme, large fonts, Chinese fallback, Unity Raw Input compatible
 - **Player Enumeration** — `GameWorldClientManager → BattleWorld → StartGame → RoleNetList`
-- **Skeleton Reading** — `BattleRoleLogic → RLC → BR → RC → AnimatorControl` chain, 8 bones
+- **Skeleton Reading** — `BattleRoleLogic → RLC → BR → RC → AnimatorControl`, 8 bones
 - **ESP**
   - 2D Box (auto-sized from bone positions)
   - 3D Box (bone-based dimensions, camera-facing)
@@ -22,16 +22,14 @@ Internal cheat DLL for **Sausage Man** (香肠派对), a Unity IL2CPP PC game.
   - Health bar
   - Name + distance
   - Team filter / max distance
-- **Aimbot** (`mouse_event` mode)
+- **Aimbot** (`mouse_event`)
   - Target selection: nearest / most centered / lowest HP
-  - `delta / smooth` algorithm (faster when far, converges naturally)
-  - FOV limit / dead zone / smoothness slider
+  - `delta / smooth` — faster when far, converges naturally
+  - FOV limit / dead zone / smoothness adjustment
   - Aim at any bone
-- **Death Detection** — based on hand position change: 30 frames (0.5s) still → Suspect, 60 frames (1s) → Inactive
-- **Hand-written W2S** — pure matrix math, zero Unity API calls
+- **Death Detection** — hand position change: 30 frames (0.5s) still → Suspect, 60 frames (1s) → Inactive
+- **W2S** — pure matrix math, zero Unity API calls
 - **GameSDK Object Layer** — typed wrappers for Transform, RoleNet, RoleLogic, AnimatorControl
-- **Config Persistence** — INI file save/load
-- **Scene Switch Handling** — auto-detects CameraController recreation
 
 ![SausageManCheat Showcase](img.png)
 
@@ -69,6 +67,8 @@ GameWorldClientManager (static class)
               └── RoleNetList (+0x98) → List<RoleNet>
 ```
 
+Read `GameWorldClientManager` via `il2cpp_class_from_name`, traverse `static_fields → MyGameWorld → BattleWorld → StartGame → RoleNetList` to get all players.
+
 ### Player Fields
 
 ```
@@ -84,7 +84,7 @@ RoleNet (+0x00)
         └── +0x7A8 → int64 team
 ```
 
-**Position reading:** `Transform.get_position` (the only Unity API call — 1× per player per frame)
+**Position:** `Transform.get_position` (the only Unity API call — 1× per player per frame)
 
 ## Skeleton Data
 
@@ -113,7 +113,7 @@ BattleRoleLogic
 
 ### Death Detection
 
-Based on hand position change (pure math, zero API calls):
+Hand position change (pure math, no API calls):
 - Average hand position unchanged for 30 frames (0.5s) → Suspect
 - 60 frames (1s) → Inactive
 - Movement detected → back to Active
