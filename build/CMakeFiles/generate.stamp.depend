@@ -1,0 +1,27 @@
+# CMake generation dependency list for this directory.
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/CMakeCXXInformation.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/CMakeCommonLanguageInclude.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/CMakeGenericSystem.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/CMakeInitializeConfigs.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/CMakeLanguageInformation.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/CMakeRCInformation.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/CMakeSystemSpecificInformation.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/CMakeSystemSpecificInitialize.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/Compiler/CMakeCommonCompilerMacros.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/Compiler/MSVC-CXX.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/Compiler/MSVC.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/Internal/CMakeCXXLinkerInformation.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/Internal/CMakeCommonLinkerInformation.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/Linker/MSVC-CXX.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/Linker/MSVC.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/Platform/Linker/Windows-MSVC-CXX.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/Platform/Linker/Windows-MSVC.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/Platform/Windows-Initialize.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/Platform/Windows-MSVC-CXX.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/Platform/Windows-MSVC.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/Platform/Windows.cmake
+F:/Program Files/cmake-4.2.0-windows-x86_64/share/cmake-4.2/Modules/Platform/WindowsPaths.cmake
+F:/Project/Reverse/UnityReverse/unityi2cpp/SausageMan/CMakeLists.txt
+F:/Project/Reverse/UnityReverse/unityi2cpp/SausageMan/build/CMakeFiles/4.2.0/CMakeCXXCompiler.cmake
+F:/Project/Reverse/UnityReverse/unityi2cpp/SausageMan/build/CMakeFiles/4.2.0/CMakeRCCompiler.cmake
+F:/Project/Reverse/UnityReverse/unityi2cpp/SausageMan/build/CMakeFiles/4.2.0/CMakeSystem.cmake

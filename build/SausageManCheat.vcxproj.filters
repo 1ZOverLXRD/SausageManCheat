@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\vendor\imgui\backends\imgui_impl_dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\vendor\imgui\backends\imgui_impl_win32.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\vendor\imgui\imgui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\vendor\imgui\imgui_draw.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\vendor\imgui\imgui_tables.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\vendor\imgui\imgui_widgets.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\src\Cheat\Aimbot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\src\Cheat\Config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\src\Cheat\ESP.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\src\Core\D3D11Hook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\src\Core\Log.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\src\SDK\CameraManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\src\SDK\Game.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\src\SDK\IL2CPP.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\src\SDK\PlayerManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\src\dllmain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="F:\Project\Reverse\UnityReverse\unityi2cpp\SausageMan\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{72B62FD4-1E07-3366-97D0-DAE287164FD6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
