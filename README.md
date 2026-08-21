@@ -1,110 +1,107 @@
 # SausageManCheat
 
-香肠派对 (Sausage Man) PC 端 IL2CPP 内部作弊 DLL。
+Internal cheat DLL for **Sausage Man** (香肠派对), a Unity IL2CPP PC game.
 
-## 游戏信息
+## Game Info
 
-- **游戏：** 香肠派对 (Sausage Man)
-- **引擎：** Unity IL2CPP（**无加密/无保护**，可直接 IL2CPPDumper 导出）
-- **平台：** PC 版，从 [TapTap](https://www.taptap.cn) 下载安装
-- **Dump：** `DUMP/dump.cs`（80MB，IL2CPPDumper 导出，包含完整类定义 + 偏移）
+- **Game:** Sausage Man (香肠派对)
+- **Engine:** Unity IL2CPP (**no encryption / no protection**, directly dumpable with IL2CPPDumper)
+- **Platform:** PC, installable via [TapTap](https://www.taptap.cn)
+- **Dump:** `SausageMan_dump.cs` (80MB) attached to [Release v1.0.0](https://github.com/1ZOverLXRD/SausageManCheat/releases/tag/v1.0.0)
 
-## 已实现功能
+## Features
 
-- **D3D11 Present Hook** — VTable 替换，不依赖 MinHook
-- **ImGui 渲染** — 亮色主题，大字体，中文 Fallback，Unity Raw Input 兼容
-- **玩家遍历** — 通过 `GameWorldClientManager → BattleWorld → StartGame → RoleNetList` 全量枚举
-- **骨骼读取** — `BattleRoleLogic → RLC → BR → RC → AnimatorControl` 链路，8 个骨骼点
+- **D3D11 Present Hook** — VTable swap, no MinHook dependency
+- **ImGui Rendering** — light theme, large fonts, Chinese fallback, Unity Raw Input compatible
+- **Player Enumeration** — `GameWorldClientManager → BattleWorld → StartGame → RoleNetList`
+- **Skeleton Reading** — `BattleRoleLogic → RLC → BR → RC → AnimatorControl` chain, 8 bones
 - **ESP**
-  - 2D Box（基于骨骼位置自适应高度）
-  - 3D Box（骨骼尺寸 + 朝向相机）
-  - 骨骼绘制（清晰骨架，无交叉线）
-  - 血量条
-  - 名字 + 距离
-  - 队伍过滤 / 最大距离
-- **Aimbot**（`mouse_event` 模式）
-  - 选敌方式：最近距离 / 最中心 / 最低血量
-  - delta/smooth 算法（距离越远移越快，自然收敛）
-  - FOV 限制 / 死区 / 平滑系数可调
-  - 可瞄准任意骨骼
-- **存活检测** — 基于手掌位置变化，30 帧(0.5s)不动 → Suspect，60 帧(1s) → Inactive
-- **手写 W2S** — 纯数学矩阵运算，零 Unity API
-- **游戏对象模型层**（`GameSDK`）— Transform、RoleNet、RoleLogic、AnimatorControl 类型化封装
-- **配置持久化** — INI 文件保存/加载
-- **场景切换自适应** — 自动检测 CameraController 重建
+  - 2D Box (auto-sized from bone positions)
+  - 3D Box (bone-based dimensions, camera-facing)
+  - Skeleton (clean topology, no crossing lines)
+  - Health bar
+  - Name + distance
+  - Team filter / max distance
+- **Aimbot** (`mouse_event` mode)
+  - Target selection: nearest / most centered / lowest HP
+  - `delta / smooth` algorithm (faster when far, converges naturally)
+  - FOV limit / dead zone / smoothness slider
+  - Aim at any bone
+- **Death Detection** — based on hand position change: 30 frames (0.5s) still → Suspect, 60 frames (1s) → Inactive
+- **Hand-written W2S** — pure matrix math, zero Unity API calls
+- **GameSDK Object Layer** — typed wrappers for Transform, RoleNet, RoleLogic, AnimatorControl
+- **Config Persistence** — INI file save/load
+- **Scene Switch Handling** — auto-detects CameraController recreation
 
-## 项目结构
+![SausageManCheat Showcase](img.png)
+
+## Project Structure
 
 ```
 src/
-├── dllmain.cpp          # DLL 入口点
+├── dllmain.cpp          # DLL entry point
 ├── Core/
-│   ├── D3D11Hook.cpp/h  # D3D11 Present Hook + ImGui 渲染
-│   ├── Log.cpp/h        # 日志系统（控制台 + 文件）
-│   └── Memory.h         # 安全内存读写（__try/__except 防护）
+│   ├── D3D11Hook.cpp/h  # D3D11 Present Hook + ImGui rendering
+│   ├── Log.cpp/h        # Logger (console + file)
+│   └── Memory.h         # Safe memory read/write (__try/__except guarded)
 ├── SDK/
-│   ├── IL2CPP.cpp/h     # IL2CPP 运行时 API 封装
-│   ├── GameOffsets.h    # 偏移常量表（dump.cs + il2cpp.h 验证）
-│   ├── GameObjects.h    # 游戏对象模型层（类型化字段访问）
-│   ├── Game.cpp/h       # 游戏主循环编排
-│   ├── CameraManager.cpp/h  # 相机矩阵读取 + W2S
-│   ├── PlayerManager.cpp/h  # 玩家遍历 + 数据采集
-│   └── MovementTracker.cpp/h # 存活检测（基于手掌位置变化）
+│   ├── IL2CPP.cpp/h     # IL2CPP runtime API wrappers
+│   ├── GameOffsets.h    # Offset constants (from dump.cs + il2cpp.h)
+│   ├── GameObjects.h    # Game object model layer (typed field access)
+│   ├── Game.cpp/h       # Game main loop orchestrator
+│   ├── CameraManager.cpp/h  # Camera matrix reading + W2S
+│   ├── PlayerManager.cpp/h  # Player enumeration + data collection
+│   └── MovementTracker.cpp/h # Death detection (hand position based)
 └── Cheat/
-    ├── Config.cpp/h     # 菜单 + 配置持久化
-    ├── ESP.cpp/h        # ESP 绘制
-    └── Aimbot.cpp/h     # mouse_event 瞄准
+    ├── Config.cpp/h     # Menu + config persistence
+    ├── ESP.cpp/h        # ESP drawing
+    └── Aimbot.cpp/h     # mouse_event aimbot
 ```
 
-## 玩家数据获取
+## Player Data
 
-### 玩家遍历链路
+### Enumeration Chain
 
 ```
-GameWorldClientManager (静态类)
+GameWorldClientManager (static class)
   └── MyGameWorld (+0x08) → BattleWorld
         └── startGame (+0x498) → StartGame
               └── RoleNetList (+0x98) → List<RoleNet>
 ```
 
-通过 `il2cpp_class_from_name` 获取 `GameWorldClientManager` 类，读 `static_fields` 得到 `MyGameWorld` 指针，沿着 `BattleWorld → StartGame → RoleNetList` 拿到所有玩家。
-
-### 单个玩家数据
+### Player Fields
 
 ```
-RoleNet (+0x00) — 玩家网络对象
-  ├── +0x40 → Transform* (managed)     ← 玩家位置
+RoleNet (+0x00)
+  ├── +0x40 → Transform* (managed)     ← player position
   ├── +0x58 → RoleNetClient*
-  │     └── +0x1D → bool (是否为本地玩家)
+  │     └── +0x1D → bool (isLocalPlayer)
   └── +0x68 → BattleRoleLogic*
         ├── +0x224 → float HP
         ├── +0x228 → float MaxHP
-        ├── +0x768 → string* 昵称
-        ├── +0x770 → int64 玩家ID
-        └── +0x7A8 → int64 队伍编号
+        ├── +0x768 → string* nickname
+        ├── +0x770 → int64 playerId
+        └── +0x7A8 → int64 team
 ```
 
-**位置读取：** `Transform.get_position`（唯一 Unity API 调用，每帧每玩家 1 次）
-- 也可通过 `Transform +0x10 → native Transform` 读 hierarchy 的 localPosition + 递归父级算 world position（零 API，但实现复杂）
+**Position reading:** `Transform.get_position` (the only Unity API call — 1× per player per frame)
 
-## 骨骼数据获取
+## Skeleton Data
 
-### 链路
+### Access Chain
 
 ```
 BattleRoleLogic
   └── +0xAE0 → RoleLogicComponent
         └── +0x80 → BattleRole
               └── +0x240 → RoleControl
-                    └── +0x48 → AnimatorControl (骨骼容器)
+                    └── +0x48 → AnimatorControl
 ```
 
-### 骨骼字段
+### Bone Offsets
 
-AnimatorControl 存储所有骨骼 Transform 引用：
-
-| 偏移 | 骨骼 | BoneIndex |
-|------|------|-----------|
+| Offset | Bone | BoneIndex |
+|--------|------|-----------|
 | +0x80 | LeftHand | 0 |
 | +0x88 | RightHand | 1 |
 | +0xE8 | Head | 2 |
@@ -114,45 +111,47 @@ AnimatorControl 存储所有骨骼 Transform 引用：
 | +0x120 | LeftFoot | 6 |
 | +0x190 | Spine | 7 |
 
-每个骨骼字段是 `Transform*`，通过 `get_position` 读取世界坐标。
+### Death Detection
 
-### 存活检测
+Based on hand position change (pure math, zero API calls):
+- Average hand position unchanged for 30 frames (0.5s) → Suspect
+- 60 frames (1s) → Inactive
+- Movement detected → back to Active
 
-基于手掌位置变化（纯数学，零 API）：
-- 左右手平均位置，连续 30 帧(0.5s)不动 → Suspect
-- 连续 60 帧(1s)不动 → Inactive
-- 动了 → 恢复 Active
-
-## 相机矩阵
+## Camera Matrices
 
 ```
-GameData (静态类)
+GameData (static class)
   └── WarCamera (+0x1E0) → CameraController
         └── MyCamera (+0x30) → managed Camera
               └── m_CachedPtr (+0x10) → native Camera
-                    ├── +0x80 → worldToCameraMatrix (16 floats, 列主序)
-                    └── +0xC0 → projectionMatrix (16 floats, 列主序)
+                    ├── +0x80 → worldToCameraMatrix (16 floats, column-major)
+                    └── +0xC0 → projectionMatrix (16 floats, column-major)
 ```
 
-## 构建
+## Build
 
-需要 VS 2022+ 和 CMake：
+Requires VS 2022+ and CMake:
 
 ```bash
-# 1. 下载 ImGui 到 vendor/
+# 1. Download ImGui to vendor/
 scripts/setup_imgui.bat
 
-# 2. 编译
+# 2. Build
 cmake -B build
 cmake --build build --config Release
 
-# 3. 产物
+# 3. Output
 build/bin/Release/SausageManCheat.dll
 ```
 
-## 注入
+## Injection
 
-用任意 DLL 注入器注入到 `Sausage Man.exe`。
+Inject `SausageManCheat.dll` into `Sausage Man.exe` with any DLL injector.
 
-- 按 `DEL` 打开/关闭菜单
-- 默认 `右键` 激活 Aimbot
+- Press `DEL` to toggle menu
+- Default aimbot key: `Right Mouse Button`
+
+---
+
+[中文文档 (Chinese)](README-zh.md)
