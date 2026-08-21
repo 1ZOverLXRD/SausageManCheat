@@ -2,6 +2,13 @@
 
 香肠派对 (Sausage Man) PC 端 IL2CPP 内部作弊 DLL。
 
+## 游戏信息
+
+- **游戏：** 香肠派对 (Sausage Man)
+- **引擎：** Unity IL2CPP（**无加密/无保护**，可直接 IL2CPPDumper 导出）
+- **平台：** PC 版，从 [TapTap](https://www.taptap.cn) 下载安装
+- **Dump：** `dump.cs`（80MB）在 [Release v1.0.0 附件](https://github.com/1ZOverLXRD/SausageManCheat/releases/tag/v1.0.0) 中
+
 ## 项目结构
 
 ```
