@@ -1,5 +1,8 @@
 # 构建产物
 build/
+
+# 文档/设计稿
+docs/
 *.dll
 *.exe
 *.pdb
