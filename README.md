@@ -2,6 +2,8 @@
 
 Internal cheat DLL for **Sausage Man** (香肠派对), a Unity IL2CPP PC game.
 
+This project serves as a reference example for Unity IL2CPP FPS cheat development: full player enumeration, skeleton reading, ESP, and aimbot in an internal DLL.
+
 ## Game Info
 
 - **Game:** Sausage Man (香肠派对)
